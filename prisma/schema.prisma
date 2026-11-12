@@ -1,0 +1,309 @@
+// Phase 1 schema. Postgres (Neon / Supabase).
+// DATABASE_URL = pooled connection (runtime), DIRECT_URL = direct connection (migrations).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Tier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TransactionKind {
+  TOPUP
+  SUBSCRIPTION
+}
+
+enum SubscriptionStatus {
+  CREATED
+  AUTHENTICATED
+  ACTIVE
+  PENDING
+  HALTED
+  PAUSED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+enum JobMode {
+  METADATA_ONLY @map("metadata-only")
+  BALANCED      @map("balanced")
+  AGGRESSIVE    @map("aggressive")
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum LedgerReason {
+  SIGNUP_BONUS
+  PURCHASE
+  SUBSCRIPTION_RENEWAL
+  JOB
+  JOB_REFUND
+  ADMIN_GRANT
+  ADMIN_REVOKE
+}
+
+// ───────────────────────── Auth.js adapter models ─────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique // always stored lowercase (enforced in app code)
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // bcrypt; null for OAuth / magic-link-only users
+
+  role           Role     @default(USER)
+  tier           Tier     @default(FREE)
+  creditsBalance Int      @default(0) // add CHECK (creditsBalance >= 0) in the init migration, see README note
+  isBanned       Boolean  @default(false)
+  bannedReason   String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  subscriptions Subscription[]
+  transactions  Transaction[]
+  jobs          ImageJob[]
+  apiKeys       ApiKey[]
+  ledger        CreditLedger[]
+
+  @@index([role])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Unused with JWT sessions but required by the Prisma adapter's type surface.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ───────────────────────── Billing ─────────────────────────
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  razorpaySubscriptionId String             @unique
+  planId                 String
+  status                 SubscriptionStatus @default(CREATED)
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId, status])
+}
+
+model Transaction {
+  id                 String            @id @default(cuid())
+  userId             String
+  subscriptionId     String?
+  kind               TransactionKind   @default(TOPUP)
+  razorpayOrderId    String            @unique
+  razorpayPaymentId  String?           @unique // set once paid; unique => idempotent credit grants
+  razorpaySignature  String?
+  amount             Int // smallest currency unit (paise)
+  currency           String            @default("INR")
+  creditsGranted     Int               @default(0)
+  status             TransactionStatus @default(PENDING)
+  failureReason      String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+// Razorpay webhook idempotency: insert event id first, skip if it already exists.
+model WebhookEvent {
+  id          String   @id // x-razorpay-event-id header
+  event       String
+  payload     Json
+  processedAt DateTime @default(now())
+
+  @@index([event])
+}
+
+// Append-only audit trail for every balance change.
+model CreditLedger {
+  id           String       @id @default(cuid())
+  userId       String
+  delta        Int // + grant / - spend
+  balanceAfter Int
+  reason       LedgerReason
+  refId        String? // jobId / transactionId / admin userId
+  note         String?
+  createdAt    DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// ───────────────────────── Product ─────────────────────────
+
+model ImageJob {
+  id               String    @id @default(cuid())
+  userId           String? // null = anonymous landing-page trial
+  apiKeyId         String?
+  originalHash     String // sha256 of the upload
+  mediaType        String    @default("image") // "image" | "video"
+  durationMs       Int? // video length, when mediaType = video
+  mode             JobMode
+  psnr             Float?
+  mse              Float?
+  processingTimeMs Int?
+  badgeDetected    Boolean   @default(false)
+  status           JobStatus @default(QUEUED)
+  creditsCharged   Int       @default(0)
+  inputBytes       Int?
+  outputBytes      Int?
+  outputKey        String? // R2 / S3 object key
+  outputExpiresAt  DateTime?
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([originalHash])
+  @@index([status])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String // first chars shown in the UI, e.g. "sk_live_ab12"
+  keyHash    String    @unique // sha256 of the full key; plaintext shown once
+  usageCount Int       @default(0)
+  lastUsedAt DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs ImageJob[]
+
+  @@index([userId])
+}
+
+// ───────────────────────── Admin-managed config (singleton) ─────────────────────────
+
+model AppConfig {
+  id String @id @default("singleton") // app code only ever upserts id = "singleton"
+
+  // Tracking & marketing
+  ga4MeasurementId   String?
+  gtmContainerId     String?
+  gscVerification    String? // content value of the verification meta tag
+  metaPixelId        String?
+  clarityId          String?
+  posthogKey         String?
+  plausibleDomain    String?
+  customHeadScripts  String? @db.Text
+  customBodyScripts  String? @db.Text
+  sanitizeScripts    Boolean @default(true)
+
+  // SMTP (password encrypted with APP_ENCRYPTION_KEY, never stored plaintext)
+  smtpHost    String?
+  smtpPort    Int?
+  smtpUser    String?
+  smtpPassEnc String?
+  smtpFrom    String?
+  smtpSecure  Boolean @default(true)
+
+  // Email templates: { welcome: {subject, html}, receipt: {...}, lowCredit: {...}, passwordReset: {...}, magicLink: {...} }
+  emailTemplates Json?
+
+  // Pricing & credits (amounts in paise)
+  freeCreditsOnSignup    Int     @default(3)
+  lowCreditThreshold     Int     @default(5)
+  creditPackPricePaise   Int     @default(9900) // price per pack
+  creditPackSize         Int     @default(50)
+  proMonthlyPaise        Int     @default(79900)
+  proAnnualPaise         Int     @default(799000)
+  proMonthlyCredits      Int     @default(500)
+  razorpayPlanProMonthly String?
+  razorpayPlanProAnnual  String?
+
+  // Engine tuning
+  defaultPsnrCutoff Float @default(38)
+  maxUploadMb       Int   @default(25)
+  maxBatchSize      Int   @default(20)
+  rateLimitPerMin   Int   @default(30)
+  anonTrialRuns     Int   @default(2)
+
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}

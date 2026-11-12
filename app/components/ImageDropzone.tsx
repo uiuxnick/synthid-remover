@@ -4,6 +4,8 @@ import React, { useState, useRef } from 'react';
 import { Upload, Image as ImageIcon, FileWarning, CheckCircle, Lock } from 'lucide-react';
 
 interface ImageDropzoneProps {
+  /** true = in-browser trial; false = signed-in workspace, which uploads to the server. */
+  local?: boolean;
   onImageSelected: (file: File) => void;
   disabled?: boolean;
 }
@@ -11,7 +13,7 @@ interface ImageDropzoneProps {
 const SUPPORTED_FORMATS = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/heic'];
 const MAX_FILE_SIZE_MB = 20;
 
-export const ImageDropzone: React.FC<ImageDropzoneProps> = ({ onImageSelected, disabled }) => {
+export const ImageDropzone: React.FC<ImageDropzoneProps> = ({ onImageSelected, disabled, local = true }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,11 +73,9 @@ export const ImageDropzone: React.FC<ImageDropzoneProps> = ({ onImageSelected, d
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => !disabled && fileInputRef.current?.click()}
-        className={`group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-8 transition-all duration-300 ${
-          isDragging
-            ? 'border-black dark:border-white bg-neutral-100 dark:bg-neutral-900/80 scale-[1.01]'
-            : 'border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-950/60 hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-900/40'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`group relative flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-[14px] border-2 border-dashed p-8 text-center transition-colors ${
+          isDragging ? 'border-h-accent bg-h-surface2' : 'border-h-line bg-h-surface hover:border-h-accent hover:bg-h-surface2'
+        } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
       >
         <input
           ref={fileInputRef}
@@ -86,25 +86,13 @@ export const ImageDropzone: React.FC<ImageDropzoneProps> = ({ onImageSelected, d
           disabled={disabled}
         />
 
-        {/* Upload Icon Box */}
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 shadow-inner group-hover:border-neutral-400 dark:group-hover:border-neutral-600 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-800">
-          <Upload className="h-6 w-6 text-neutral-600 dark:text-neutral-300 group-hover:text-black dark:group-hover:text-white transition-colors" />
-        </div>
-
-        {/* Header Text */}
-        <h3 className="mb-1 text-center font-sans text-base font-semibold tracking-tight text-black dark:text-white">
-          Drop an image here or click to browse
-        </h3>
-
-        <p className="mb-4 text-center text-xs text-neutral-500 dark:text-neutral-400">
-          Supports JPG, PNG, WEBP, AVIF up to {MAX_FILE_SIZE_MB}MB
+        <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[14px] bg-h-accent text-h-accent-ink"><Upload aria-hidden className="h-6 w-6" /></span>
+        <h3 className="text-[22px] font-semibold tracking-[-0.01em]">Drop an image here, or click to choose one</h3>
+        <p className="mt-2 text-[15px] opacity-70">JPG, PNG, WEBP or AVIF, up to {MAX_FILE_SIZE_MB} MB</p>
+        <p className="mt-6 flex items-center gap-2 text-[14px] opacity-70">
+          <Lock aria-hidden className="h-3.5 w-3.5" />
+          {local ? 'Runs in your browser. Never uploaded.' : 'Processed on our servers. Not stored.'}
         </p>
-
-        {/* Privacy Callout */}
-        <div className="flex items-center gap-2 rounded-full border border-neutral-200 dark:border-neutral-850 bg-neutral-100 dark:bg-neutral-900/80 px-3 py-1 font-mono text-[11px] text-neutral-600 dark:text-neutral-400">
-          <Lock className="h-3 w-3 text-neutral-500 dark:text-neutral-400" />
-          <span>Private local processing · Never leaves your browser</span>
-        </div>
       </div>
 
       {/* Error Banner */}

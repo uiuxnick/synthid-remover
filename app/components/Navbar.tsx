@@ -1,117 +1,117 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, History, Moon, Sun, Github, LayoutDashboard } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Moon, Sun, Menu, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
+
+const LINKS = [
+  { href: '/features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/api-docs', label: 'API' },
+];
+
+type SessionUser = { name?: string | null; email?: string | null } | null;
 
 export const Navbar: React.FC = () => {
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<SessionUser | undefined>(undefined); // undefined = still loading
   const { theme, setTheme } = useTheme();
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const pathname = usePathname();
 
+  useEffect(() => setMounted(true), []);
+
+  // Fetched client-side so marketing pages stay statically rendered (fast LCP).
+  // Re-run on route change: the navbar persists across client navigations, so without this it
+  // would keep showing "Log in" right after a login/register redirect.
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    let cancelled = false;
+    fetch('/api/auth/session')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => !cancelled && setUser(s?.user ?? null))
+      .catch(() => !cancelled && setUser(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
-    const currentPath = window.location.pathname.replace(/\/$/, '');
-    const homePath = basePath.replace(/\/$/, '');
-
-    if (currentPath === homePath || currentPath === '' || currentPath === '/') {
-      e.preventDefault();
-      const el = document.getElementById(targetId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.history.pushState(null, '', `${basePath}/#${targetId}`);
-      }
-    }
-  };
+  const iconBtn =
+    'flex h-10 w-10 items-center justify-center rounded-[10px] bg-h-surface text-h-ink transition-colors hover:bg-h-surface2';
 
   return (
-    <header className="sticky top-0 z-50 h-16 w-full border-b border-neutral-200 bg-white/80 dark:border-neutral-800 dark:bg-black/80 backdrop-blur-md">
-      <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Left Section: Brand & Nav Links */}
+    <header className="sticky top-0 z-50 w-full border-b border-h-line bg-h-bg">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-8">
-          <Link href="/" className="group flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <div className="relative flex h-5 w-5 items-center justify-center rounded border border-black bg-white dark:border-white dark:bg-black transition-transform duration-300 group-hover:scale-105">
-              <span className="h-2 w-2 rounded-xs bg-black dark:bg-white" />
-            </div>
-            <span className="font-sans text-base font-semibold tracking-tight text-black dark:text-white">
-              SynthID Remover
-            </span>
-            <div className="hidden items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 px-2.5 py-0.5 font-mono text-[10px] font-medium tracking-tight text-neutral-700 dark:text-neutral-300 uppercase sm:flex">
-              <ShieldCheck className="h-3 w-3 text-black dark:text-white" />
-              <span>100% Private & Local</span>
-            </div>
+          <Link href="/" className="group flex items-center gap-2.5">
+            <span aria-hidden className="h-5 w-5 rounded-[6px] bg-h-accent" />
+            <span className="text-[17px] font-semibold tracking-[-0.01em]">SynthID Remover</span>
           </Link>
-
-          {/* Navigation Links */}
-          <nav className="hidden items-center gap-6 font-sans text-xs font-medium tracking-wide text-neutral-500 dark:text-neutral-400 md:flex">
-            <a
-              href={`${basePath}/#workspace`}
-              onClick={(e) => handleNavClick(e, 'workspace')}
-              className="transition-colors hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              Workspace
-            </a>
-            <a
-              href={`${basePath}/#how-it-works`}
-              onClick={(e) => handleNavClick(e, 'how-it-works')}
-              className="transition-colors hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              How It Works
-            </a>
-            <a
-              href={`${basePath}/#capabilities`}
-              onClick={(e) => handleNavClick(e, 'capabilities')}
-              className="transition-colors hover:text-black dark:hover:text-white cursor-pointer"
-            >
-              Capabilities
-            </a>
-            <Link href="/dashboard" className="flex items-center gap-1.5 transition-colors hover:text-black dark:hover:text-white">
-              <History className="h-3.5 w-3.5" />
-              History
-            </Link>
+          <nav className="hidden items-center gap-7 text-[15px] text-h-muted md:flex">
+            {LINKS.map((l) => (
+              <Link key={l.href} href={l.href} aria-current={pathname === l.href ? 'page' : undefined} className={`transition-colors hover:text-h-ink ${pathname === l.href ? 'text-h-ink' : ''}`}>
+                {l.label}
+              </Link>
+            ))}
           </nav>
         </div>
 
-        {/* Right Status Badge & Actions */}
         <div className="flex items-center gap-2.5">
-
-          <a
-            href="https://github.com/satiricalguru/synthid-remover"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 transition-all hover:border-black hover:bg-black hover:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black cursor-pointer"
-            aria-label="GitHub Repository"
-            title="GitHub Repository"
-          >
-            <Github className="h-4 w-4" />
-          </a>
-
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 transition-all hover:border-black hover:bg-black hover:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
-            aria-label="Toggle Theme"
+            className={iconBtn}
+            aria-label="Toggle theme"
           >
-            {mounted ? (
-              theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
-            ) : (
-              <div className="h-4 w-4" />
-            )}
+            {mounted ? theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" /> : <span className="h-4 w-4" />}
           </button>
 
-          <Link
-            href="/dashboard"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 transition-all hover:border-black hover:bg-black hover:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
-            aria-label="Dashboard"
-            title="Dashboard"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-          </Link>
+          <div className="hidden items-center gap-2 md:flex">
+            {user === undefined ? (
+              <span className="h-8 w-24" aria-hidden />
+            ) : user ? (
+              <Link href="/dashboard" className="rounded-[10px] bg-h-accent px-4 py-2.5 text-[15px] font-medium text-h-accent-ink">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="px-2 text-[15px] text-h-muted hover:text-h-ink">
+                  Log in
+                </Link>
+                <Link href="/register" className="rounded-[10px] bg-h-accent px-4 py-2.5 text-[15px] font-medium text-h-accent-ink">
+                  Get started
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button className={`${iconBtn} md:hidden`} onClick={() => setOpen((v) => !v)} aria-label="Menu" aria-expanded={open}>
+            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
         </div>
       </div>
+
+      {open && (
+        <div className="bg-h-surface px-4 py-4 md:hidden">
+          <div className="flex flex-col gap-4 text-[17px]">
+            {LINKS.map((l) => (
+              <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                {l.label}
+              </Link>
+            ))}
+            {user ? (
+              <Link href="/dashboard" onClick={() => setOpen(false)} className="font-semibold">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setOpen(false)}>Log in</Link>
+                <Link href="/register" onClick={() => setOpen(false)} className="font-semibold">Get started</Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 };

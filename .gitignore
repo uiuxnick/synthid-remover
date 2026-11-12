@@ -36,3 +36,8 @@ output_*.png
 user_test_*
 upsoken_*
 cyberpunk_original.jpg
+
+# local tooling output
+.claude-flow/
+.taste-skill/
+cyberpunk_cleaned_*.jpg

@@ -1,53 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processImagePipeline, DisruptionMode } from '@/lib/imageProcessor';
+import { auth } from '@/auth';
+import { getAppConfig } from '@/lib/credits';
+import { CleanError, cleanAnonymous, cleanForUser, parseCleanForm } from '@/lib/cleanJob';
+import { clientIp, consumeAnonTrial, rateLimit } from '@/lib/ratelimit';
+
+export const dynamic = 'force-dynamic';
+
+const tooMany = (retryAfter: number, message: string, code: string) =>
+  NextResponse.json({ error: message, code }, { status: 429, headers: { 'Retry-After': String(retryAfter) } });
 
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  const user = session?.user?.id ? session.user : null;
+  const ip = clientIp(req);
+
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') as File | null;
-    const stripMetadata = formData.get('stripMetadata') !== 'false';
-    const disruptSignals = formData.get('disruptSignals') !== 'false';
-    const removeVisibleBadge = formData.get('removeVisibleBadge') !== 'false';
-    const format = (formData.get('format') as 'jpeg' | 'png' | 'webp') || 'png';
-    const disruptionMode = (formData.get('disruptionMode') as DisruptionMode) || 'balanced';
-    const rawStrength = formData.get('disruptionStrength');
-    const disruptionStrength = rawStrength ? parseInt(String(rawStrength), 10) : 75;
+    const cfg = await getAppConfig();
+    const rl = await rateLimit(user ? `u:${user.id}` : `ip:${ip}`, cfg.rateLimitPerMin);
+    if (!rl.ok) return tooMany(rl.retryAfter, 'Too many requests. Slow down.', 'RATE_LIMITED');
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No image file provided in request payload.' },
-        { status: 400 }
-      );
+    const parsed = parseCleanForm(await req.formData());
+
+    let result: { buffer: Buffer; telemetry: any; jobId?: string };
+    if (user) {
+      result = await cleanForUser({ user: { id: user.id, email: user.email, name: user.name }, req: parsed });
+    } else {
+      // Anonymous landing-page trial, enforced per IP on the server.
+      if (!(await consumeAnonTrial(ip, cfg.anonTrialRuns))) {
+        return NextResponse.json(
+          { error: 'Free trial used up. Create an account to continue.', code: 'TRIAL_EXHAUSTED' },
+          { status: 403 }
+        );
+      }
+      result = await cleanAnonymous(parsed);
     }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const inputBuffer = Buffer.from(arrayBuffer);
-
-    // Run Sharp image pipeline
-    const { buffer: processedBuffer, telemetry } = await processImagePipeline(inputBuffer, {
-      stripMetadata,
-      disruptSignals,
-      disruptionMode,
-      disruptionStrength,
-      removeVisibleBadge,
-      targetFormat: format,
-      quality: 95,
-    });
-
-    const base64Image = `data:image/${format};base64,${processedBuffer.toString('base64')}`;
 
     return NextResponse.json({
       success: true,
-      filename: file.name,
-      format,
-      base64Image,
-      telemetry,
+      filename: parsed.file.name,
+      format: parsed.format,
+      base64Image: `data:image/${parsed.format};base64,${result.buffer.toString('base64')}`,
+      telemetry: result.telemetry,
+      jobId: result.jobId ?? null,
     });
   } catch (error: any) {
-    console.error('Local Processing Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to process image locally.' },
-      { status: 500 }
-    );
+    if (error instanceof CleanError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
+    console.error('Processing Error:', error);
+    return NextResponse.json({ error: 'Failed to process image.' }, { status: 500 });
   }
 }

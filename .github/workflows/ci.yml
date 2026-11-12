@@ -34,5 +34,13 @@ jobs:
       - name: Run automated test suite
         run: npm test
 
+      - name: Run unit tests
+        run: npm run test:unit
+
       - name: Verify build
         run: npm run build
+        env:
+          # Build-time placeholders only; no database is contacted for the pages CI checks.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+          AUTH_SECRET: ci-build-placeholder

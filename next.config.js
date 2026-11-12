@@ -1,22 +1,22 @@
 /** @type {import('next').NextConfig} */
-const isGithubActions = process.env.GITHUB_ACTIONS || false;
-const basePath = isGithubActions ? '/Synthid-remover' : '';
-
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    unoptimized: true,
+  images: { unoptimized: true },
+  poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+        ],
+      },
+    ];
   },
-  env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
-  },
-  ...(isGithubActions
-    ? {
-        output: 'export',
-        basePath: '/Synthid-remover',
-        assetPrefix: '/Synthid-remover',
-      }
-    : {}),
 };
 
 module.exports = nextConfig;

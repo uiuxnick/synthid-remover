@@ -211,11 +211,11 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
   return (
     <div className="flex flex-col items-center w-full gap-4">
       {/* Brush Toolbar Controls */}
-      <div className="flex flex-wrap items-center justify-between w-full p-3 border rounded-xl border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-950/80 gap-3">
+      <div className="flex flex-wrap items-center justify-between w-full p-3 border rounded-xl border-h-line  bg-h-surface  gap-3">
         {/* Brush Size Slider */}
         <div className="flex items-center gap-3">
-          <Paintbrush className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
-          <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">Size:</span>
+          <Paintbrush className="h-4 w-4 text-h-muted " />
+          <span className=" text-xs text-h-muted ">Size:</span>
           <input
             type="range"
             min="5"
@@ -224,7 +224,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
             onChange={(e) => setBrushRadius(Number(e.target.value))}
             className="w-28 accent-black dark:accent-white cursor-pointer"
           />
-          <span className="font-mono text-xs text-black dark:text-white">{brushRadius}px</span>
+          <span className=" text-xs text-h-ink ">{brushRadius}px</span>
         </div>
 
         {/* Action Buttons */}
@@ -232,7 +232,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
           <button
             onClick={handleUndo}
             disabled={strokeHistory.length <= 1 || isProcessing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-800 bg-neutral-200 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-300 hover:text-black dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 disabled:opacity-40 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-h-line  bg-h-surface2  text-h-ink  hover:text-h-ink  hover:border-h-ink  disabled:opacity-40 transition-all"
             title="Undo stroke"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
           <button
             onClick={handleClear}
             disabled={strokeHistory.length <= 1 || isProcessing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-800 bg-neutral-200 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-300 hover:text-black dark:hover:text-white hover:border-neutral-400 dark:hover:border-neutral-700 disabled:opacity-40 transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-h-line  bg-h-surface2  text-h-ink  hover:text-h-ink  hover:border-h-ink  disabled:opacity-40 transition-all"
             title="Clear brush mask"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -252,7 +252,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
           <button
             onClick={handleExportMask}
             disabled={isProcessing}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-md border border-black dark:border-white bg-white text-black hover:bg-black hover:text-white dark:bg-white dark:text-black dark:hover:bg-black dark:hover:text-white transition-all disabled:opacity-50 shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-md border border-black  bg-h-bg text-h-ink hover:bg-black hover:text-white     transition-all disabled:opacity-50 shadow-sm"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Inpaint Mask</span>
@@ -263,7 +263,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
       {/* Canvas Workspace Container */}
       <div
         ref={containerRef}
-        className="relative flex items-center justify-center w-full max-h-[500px] overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2"
+        className="relative flex items-center justify-center w-full max-h-[500px] overflow-hidden rounded-xl border border-h-line  bg-h-surface  p-2"
       >
         <div className="relative max-w-full max-h-[480px]">
           {/* Base Image Canvas */}
@@ -287,7 +287,7 @@ export const InpaintCanvas: React.FC<InpaintCanvasProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full px-1 text-[11px] font-mono text-neutral-600 dark:text-neutral-400">
+      <div className="flex items-center justify-between w-full px-1 text-[13px]  text-h-muted ">
         <span>Brush over visible badges (e.g. Gemini sparkle) to generate binary inpaint stencil.</span>
         <span>{imageDimensions.width} x {imageDimensions.height} px</span>
       </div>

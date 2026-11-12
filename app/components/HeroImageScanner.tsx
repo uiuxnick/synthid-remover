@@ -53,21 +53,9 @@ export const HeroImageScanner: React.FC = () => {
     setSliderPos(percentage);
   };
 
+  const base = process.env.NEXT_PUBLIC_BASE_PATH || '';
   return (
-    <div className="relative rounded-2xl border border-neutral-800 bg-neutral-950 p-4 shadow-2xl overflow-hidden">
-      {/* Scanner Header */}
-      <div className="mb-3 flex items-center justify-between font-mono text-[10px] tracking-widest text-neutral-400 uppercase select-none">
-        <span className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>signal · scrub</span>
-        </span>
-        <div className="flex items-center gap-1.5 text-white">
-          <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
-          <span>live preview</span>
-        </div>
-      </div>
-
-      {/* Interactive Image Container */}
+    <div data-ui className="relative">
       <div
         ref={containerRef}
         onMouseEnter={() => setIsHovering(true)}
@@ -76,72 +64,28 @@ export const HeroImageScanner: React.FC = () => {
         onTouchStart={() => setIsHovering(true)}
         onTouchEnd={() => setIsHovering(false)}
         onTouchMove={handleTouchMove}
-        className="relative h-72 w-full overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 select-none cursor-ew-resize group touch-none"
+        className="group relative aspect-[1200/655] w-full cursor-ew-resize touch-none select-none overflow-hidden rounded-[10px] bg-black"
+        role="img"
+        aria-label="Before and after comparison: the original image on the right, the cleaned image on the left"
       >
-        {/* Base Layer: Image WITH Watermark */}
-        <div className="absolute inset-0 bg-black">
-          <img
-            src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/hero-watermarked.jpg`}
-            alt="Watermarked Sample"
-            className="h-full w-full object-contain"
-          />
-          {/* Frequency Dither Overlay */}
-          <div className="absolute inset-0 bg-grid-pattern opacity-25 pointer-events-none" />
-        </div>
+        {/* Base layer: the original */}
+        <img src={`${base}/hero-watermarked.jpg`} alt="" width={1200} height={655} className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute right-3 top-3 rounded-[6px] bg-white px-2.5 py-1 text-[13px] font-medium text-black">Original</div>
 
-        {/* Right Clipped Layer (sliderPos% to 100%): EMBEDDED SYNTHID SIGNAL Badge */}
-        <div
-          className="absolute inset-y-0 right-0 overflow-hidden pointer-events-none z-10"
-          style={{ left: `${sliderPos}%` }}
-        >
-          <div
-            className="relative h-full"
-            style={{ width: containerWidth > 0 ? `${containerWidth}px` : '100%', marginLeft: `-${sliderPos}%` }}
-          >
-            <div className="absolute top-3 right-3 rounded-md bg-black/85 backdrop-blur-md px-2.5 py-1 font-mono text-[10px] font-medium text-neutral-300 uppercase tracking-wider border border-neutral-800 shadow-lg">
-              embedded synthid signal
-            </div>
+        {/* Left of the divider: the cleaned image */}
+        <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${sliderPos}%` }}>
+          <div className="relative h-full" style={{ width: containerWidth > 0 ? `${containerWidth}px` : '100%' }}>
+            <img src={`${base}/hero-cleaned.jpg`} alt="" width={1200} height={655} className="h-full w-full object-cover" />
+            <div className="absolute left-3 top-3 rounded-[6px] bg-h-accent px-2.5 py-1 text-[13px] font-medium text-h-accent-ink">Cleaned</div>
           </div>
         </div>
 
-        {/* Top Clipped Layer (0% to sliderPos%): Image WITH Watermark REMOVED & CLEARED SIGNAL Badge */}
-        <div
-          className="absolute inset-y-0 left-0 overflow-hidden"
-          style={{ width: `${sliderPos}%` }}
-        >
-          <div
-            className="relative h-full bg-black"
-            style={{ width: containerWidth > 0 ? `${containerWidth}px` : '100%' }}
-          >
-            <img
-              src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/hero-cleaned.jpg`}
-              alt="Cleaned Sample"
-              className="h-full w-full object-contain"
-            />
-            {/* Label Left: CLEARED SIGNAL */}
-            <div className="absolute top-3 left-3 rounded-md bg-black/85 backdrop-blur-md px-2.5 py-1 font-mono text-[10px] font-semibold text-white uppercase tracking-wider border border-white/20 shadow-lg z-10">
-              cleared signal
-            </div>
-          </div>
-        </div>
-
-        {/* Vertical Scan Divider Bar */}
-        <div
-          className="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)] pointer-events-none transition-transform duration-75"
-          style={{ left: `${sliderPos}%` }}
-        >
-          {/* Slider Handle Grip */}
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-7 w-7 rounded-full border border-white bg-black/90 text-white flex items-center justify-center shadow-xl backdrop-blur-md text-[10px] font-mono font-bold">
-            ↔
-          </div>
+        {/* Divider and grip */}
+        <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-white" style={{ left: `${sliderPos}%` }}>
+          <div className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-white text-[14px] text-black">↔</div>
         </div>
       </div>
-
-      {/* Scanner Footer Legend */}
-      <div className="mt-3 flex items-center justify-between font-mono text-[10px] text-neutral-400 uppercase select-none">
-        <span>SynthID · C2PA · EXIF</span>
-        <span>1-pass local process</span>
-      </div>
+      <p className="mt-3 text-[14px] text-h-muted">Move across the image to compare. The cleaned side has no embedded metadata.</p>
     </div>
   );
 };
