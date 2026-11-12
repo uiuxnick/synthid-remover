@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { name, email, password } = parsed.data;
+  const { name, email, phone, password } = parsed.data;
 
   try {
     const [passwordHash, config] = await Promise.all([bcrypt.hash(password, 12), getAppConfig()]);
 
     const userId = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { name, email, passwordHash } });
+      const user = await tx.user.create({ data: { name, email, phone, passwordHash } });
       if (config.freeCreditsOnSignup > 0) {
         await grantCredits(tx, {
           userId: user.id,

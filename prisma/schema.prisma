@@ -85,6 +85,7 @@ model User {
   creditsBalance Int      @default(0) // add CHECK (creditsBalance >= 0) in the init migration, see README note
   isBanned       Boolean  @default(false)
   bannedReason   String?
+  phone          String? // E.164, required at signup; null only for accounts created before this field or via OAuth until completed
   lastLoginAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

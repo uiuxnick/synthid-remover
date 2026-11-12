@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Check, Lock, FileSearch, Sparkles, Upload, ScanSearch, Download } from 'lucide-react';
-import { Playground } from './components/Playground';
+import { HeroTool } from './components/HeroTool';
 import { PricingTable } from './components/PricingTable';
 import { JsonLd } from './components/JsonLd';
 import { Reveal } from './components/home/Reveal';
@@ -59,21 +59,18 @@ export default function LandingPage() {
             <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-h-surface2 px-4 py-1.5 text-[14px] font-medium text-h-accent">
               <Lock aria-hidden className="h-3.5 w-3.5" /> Free trial runs in your browser
             </p>
-            <h1 className="mx-auto mt-6 max-w-[22ch] text-[40px] font-bold leading-[1.06] tracking-[-0.03em] sm:text-[64px]">
-              Clean metadata and watermarks from your images
+            <h1 className="mx-auto mt-6 max-w-[27ch] text-[40px] font-bold leading-[1.06] tracking-[-0.03em] sm:text-[64px]">
+              Clean metadata and watermarks from images and videos
             </h1>
             <p className="mx-auto mt-6 max-w-[60ch] text-[18px] leading-relaxed text-h-muted sm:text-[20px]">
-              Strip EXIF, XMP and C2PA data, erase visible AI badges, and get a report showing exactly what changed. For images you own.
+              Strip EXIF, XMP and C2PA data, erase visible AI badges, and get a report showing exactly what changed. For media you own.
             </p>
           </Reveal>
           <Reveal delay={120} className="mt-10">
             <div id="try" data-ui className="h-card mx-auto max-w-[920px] scroll-mt-24 p-3 text-left sm:p-5">
-              <Playground />
+              <HeroTool />
             </div>
-            <p className="mt-5 text-[15px] text-h-muted">
-              Two free images, no sign-up. Have a video?{' '}
-              <Link href="/dashboard/video" className="font-medium text-h-accent underline underline-offset-4">Clean it from your dashboard</Link>.
-            </p>
+            <p className="mt-5 text-[15px] text-h-muted">Two free images, no sign-up. Video needs a free account.</p>
           </Reveal>
         </div>
       </section>

@@ -18,7 +18,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { q?: 
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * PAGE,
       take: PAGE,
-      select: { id: true, email: true, name: true, role: true, tier: true, creditsBalance: true, isBanned: true, createdAt: true, lastLoginAt: true },
+      select: { id: true, email: true, name: true, role: true, tier: true, creditsBalance: true, isBanned: true, createdAt: true, lastLoginAt: true, phone: true },
     }),
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE));
@@ -65,7 +65,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { q?: 
                   <input type="hidden" name="userId" value={u.id} />
                   <input type="hidden" name="ban" value={u.isBanned ? '0' : '1'} />
                   <p className="text-[14px] font-medium">Access</p>
-                  <p className="text-[14px] text-h-muted">Joined {u.createdAt.toISOString().slice(0, 10)}{u.lastLoginAt && ` · last login ${u.lastLoginAt.toISOString().slice(0, 10)}`}</p>
+                  <p className="text-[14px] text-h-muted">Joined {u.createdAt.toISOString().slice(0, 10)}{u.phone ? ` · ${u.phone}` : ' · no mobile number'}{u.lastLoginAt && ` · last login ${u.lastLoginAt.toISOString().slice(0, 10)}`}</p>
                   <button className={btnGhost} disabled={u.id === admin.id}>{u.isBanned ? 'Unban' : 'Ban user'}</button>
                 </form>
               </div>

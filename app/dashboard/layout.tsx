@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth-helpers';
 import { prisma } from '@/lib/db';
 import { SideNav, type SideNavItem } from '@/app/components/SideNav';
 import { signOut } from '@/auth';
+import { PhoneGate } from '@/app/components/PhoneGate';
 
 async function logout() {
   'use server';
@@ -17,19 +18,21 @@ const NAV: SideNavItem[] = [
   { href: '/dashboard/history', label: 'History' },
   { href: '/dashboard/billing', label: 'Billing' },
   { href: '/dashboard/api-keys', label: 'API keys' },
+  { href: '/dashboard/profile', label: 'Profile' },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const sessionUser = await requireUser();
   const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
-    select: { creditsBalance: true, tier: true, role: true },
+    select: { creditsBalance: true, tier: true, role: true, phone: true },
   });
   const credits = user?.creditsBalance ?? 0;
   const tier = (user?.tier ?? 'FREE').toLowerCase();
 
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-4 py-8 sm:px-6 md:flex-row md:gap-10 md:py-12">
+      <PhoneGate hasPhone={!!user?.phone} />
       <aside className="md:w-56 md:shrink-0">
         <div className="mb-5 flex items-end justify-between rounded-[14px] bg-h-surface px-5 py-4 md:block">
           <div>

@@ -25,7 +25,7 @@ const CORNERS = ['Bottom right', 'Bottom left', 'Top right', 'Top left'] as cons
 type Corner = (typeof CORNERS)[number];
 const mb = (b: number) => `${(b / 1024 / 1024).toFixed(1)} MB`;
 
-export function VideoWorkspace() {
+export function VideoWorkspace({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -98,7 +98,7 @@ export function VideoWorkspace() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className={embedded ? 'sr-only' : ''}>
         <h1 className="text-[32px] font-semibold leading-tight tracking-[-0.02em]">Clean a video</h1>
         <p className="mt-2 max-w-[62ch] text-[16px] text-h-muted">
           Remove embedded metadata, or blend out a visible mark in a corner. For videos you own. Up to {VIDEO_MAX_MB} MB and {VIDEO_MAX_SECONDS / 60} minutes.

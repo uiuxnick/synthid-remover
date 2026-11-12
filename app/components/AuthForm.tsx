@@ -23,7 +23,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const callbackUrl = safeCallback(params.get('callbackUrl'));
   const [busy, setBusy] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ name: '', email: (params.get('email') ?? '').slice(0, 254), password: '' }); // email may be prefilled from the homepage
+  const [form, setForm] = useState({ name: '', email: (params.get('email') ?? '').slice(0, 254), phone: '', password: '' }); // email may be prefilled from the homepage
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -116,6 +116,24 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <label htmlFor="auth-email" className={label}>Email</label>
               <input id="auth-email" className={field} type="email" inputMode="email" autoComplete="email" required value={form.email} onChange={set('email')} />
             </div>
+            {isRegister && (
+              <div>
+                <label htmlFor="auth-phone" className={label}>Mobile number</label>
+                <input
+                  id="auth-phone"
+                  className={field}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="+91 98765 43210"
+                  aria-describedby="auth-phone-hint"
+                  required
+                  value={form.phone}
+                  onChange={set('phone')}
+                />
+                <p id="auth-phone-hint" className="mt-1.5 text-[14px] text-h-muted">Include your country code.</p>
+              </div>
+            )}
             <div>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="auth-password" className={label}>Password</label>
@@ -159,7 +177,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </p>
           {isRegister && (
             <p className="mt-3 text-[14px] text-h-muted">
-              By continuing you agree to the <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{' '}
+              Signing up with Google or an email link? We will ask for your mobile number right after. By continuing you agree to the <Link href="/terms" className="underline underline-offset-4">Terms</Link> and{' '}
               <Link href="/privacy" className="underline underline-offset-4">Privacy Policy</Link>.
             </p>
           )}
